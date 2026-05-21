@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Architecture Governance — Vision</title>
+<style>
+:root {
+  --font:   Calibri, Arial, sans-serif;
+  --mono:   'Courier New', Courier, monospace;
+  --sm:     10px;
+  --md:     12px;
+  --lg:     14px;
+  --xl:     17px;
+
+  --paper:  #faf9f6;
+  --warm:   #f3f0e8;
+  --ink:    #1a1814;
+  --mid:    #3d3a34;
+  --soft:   #6b6660;
+  --rule:   #d4cfc4;
+  --rules:  #b8b2a6;
+
+  --violet: #3d1e5c;
+  --teal:   #1a5c4e;
+  --slate:  #1e3d5c;
+  --gold:   #7a5c10;
+  --rust:   #6b2a10;
+  --green:  #1e4a1e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #e8e4dc;
+  font-family: var(--font);
+  font-size: var(--md);
+  color: var(--ink);
+  padding: 20px;
+  line-height: 1.5;
+}
+
+.page {
+  width: 1000px;
+  margin: 0 auto;
+  background: var(--paper);
+  padding: 52px 64px 64px;
+  position: relative;
+  box-shadow: 0 2px 24px rgba(0,0,0,0.12);
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px solid var(--rules);
+  pointer-events: none;
+}
+
+/* ── Header ── */
+.header {
+  padding-bottom: 20px;
+  margin-bottom: 32px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.eyebrow {
+  font-size: var(--sm);
+  font-family: var(--mono);
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+
+.header h1 em {
+  font-style: normal;
+  color: var(--violet);
+}
+
+.header-sub {
+  font-size: var(--lg);
+  color: var(--soft);
+  font-weight: 400;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+/* ── Problem statement ── */
+.problem {
+  background: #fff8f0;
+  border: 1px solid #e8d4b0;
+  border-left: 4px solid var(--gold);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.problem-title {
+  font-size: var(--sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.problem-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.problem-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.problem-text {
+  font-size: var(--md);
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+.problem-text strong { color: var(--ink); font-weight: 700; }
+
+/* ── Section ── */
+.section {
+  margin-bottom: 36px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.section-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: var(--sm);
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: var(--xl);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.section-body {
+  font-size: var(--md);
+  color: var(--mid);
+  line-height: 1.75;
+}
+
+.section-body p { margin-bottom: 12px; }
+.section-body p:last-child { margin-bottom: 0; }
+.section-body strong { color: var(--ink); font-weight: 700; }
+
+/* ── Value cards ── */
+.value-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.value-card {
+  border: 1px solid var(--rule);
+  padding: 16px;
+  background: var(--warm);
+}
+
+.value-card-title {
+  font-size: var(--md);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.value-card-who {
+  font-size: var(--sm);
+  font-family: var(--mono);
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.value-card-body {
+  font-size: var(--sm);
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+/* ── Principles ── */
+.principles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.principle {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: white;
+}
+
+.principle-mark {
+  font-family: var(--mono);
+  font-size: var(--sm);
+  font-weight: 700;
+  color: var(--violet);
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.principle-text {
+  font-size: var(--sm);
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+.principle-text strong { color: var(--ink); font-weight: 700; }
+
+/* ── How it works ── */
+.flow-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) ;
+  gap: 0;
+  margin-top: 16px;
+}
+
+.flow-step {
+  padding: 14px 12px;
+  border: 1px solid var(--rule);
+  border-right: none;
+  background: white;
+  position: relative;
+}
+
+.flow-step:last-child { border-right: 1px solid var(--rule); }
+
+.flow-step-num {
+  font-family: var(--mono);
+  font-size: var(--sm);
+  font-weight: 700;
+  color: var(--soft);
+  margin-bottom: 5px;
+}
+
+.flow-step-title {
+  font-size: var(--sm);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.flow-step-body {
+  font-size: var(--sm);
+  color: var(--soft);
+  line-height: 1.5;
+}
+
+.flow-step::after {
+  content: '→';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--rules);
+  font-size: 16px;
+  z-index: 1;
+}
+
+.flow-step:last-child::after { display: none; }
+
+/* ── Mandate box ── */
+.mandate-box {
+  background: #0a0e1a;
+  color: white;
+  padding: 24px 28px;
+  margin-top: 16px;
+}
+
+.mandate-box p {
+  font-size: var(--md);
+  line-height: 1.8;
+  color: #d1d5db;
+  margin-bottom: 10px;
+}
+
+.mandate-box p:last-child { margin-bottom: 0; }
+.mandate-box strong { color: white; font-weight: 700; }
+
+/* ── Footer ── */
+.footer {
+  border-top: 1px solid var(--ink);
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 40px;
+}
+
+.footer-links {
+  font-size: var(--sm);
+  color: var(--soft);
+  line-height: 1.9;
+}
+
+.footer-links a {
+  color: var(--violet);
+  text-decoration: none;
+}
+
+.footer-meta {
+  font-family: var(--mono);
+  font-size: var(--sm);
+  color: var(--soft);
+  text-align: right;
+  line-height: 1.8;
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  .page { box-shadow: none; width: 100%; padding: 32px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="eyebrow">Network Architecture Governance · Financial Services</div>
+    <h1>Why This Framework Exists<br>and <em>Where It Is Going</em></h1>
+    <div class="header-sub">The value proposition, guiding principles, and destination of the network architecture governance framework — for everyone who works within it or is affected by it.</div>
+  </div>
+
+  <!-- The problem -->
+  <div class="problem">
+    <div class="problem-title">The problem this framework solves</div>
+    <div class="problem-grid">
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Invisible risk.</strong> Approved components assembled incorrectly. Topology decisions made with artistic licence. Nobody knows what wrong looks like until something breaks or an audit finds it.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Undocumented decisions.</strong> Architectural choices made informally, under delivery pressure, without a record. The same problem solved differently in every programme — no shared baseline.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Governance bottleneck.</strong> Everything routes through the principal architect informally. No structured process means no throughput data, no capacity case, no delegation path.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Business disconnect.</strong> The business asks for outcomes. Tech teams respond with VLANs and ports. There is no translation layer that connects what the business needs to what the network delivers.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Regulatory exposure.</strong> PCI-DSS, DORA, and PRA obligations require demonstrable architecture governance. Informal processes leave gaps an audit will find. Contracted capabilities on EOL infrastructure are invisible until they fail.</div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-dot"></div>
+        <div class="problem-text"><strong>Programme risk.</strong> Major programmes — SASE/SD-WAN, ZTNA transition — have no governed architecture foundation to build on. Options papers without a framework behind them are opinion documents, not governance decisions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Value proposition -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num" style="background:var(--violet)">1</div>
+      <div class="section-title">What this framework enables</div>
+    </div>
+    <div class="section-body">
+      <p>This is not a governance framework for its own sake. Every artefact, every decision point, and every process in it exists to enable one of three outcomes.</p>
+    </div>
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="value-card-who">For the business</div>
+        <div class="value-card-title">Outcomes without jargon</div>
+        <div class="value-card-body">The business requests capabilities — internet access, partner connectivity, application hosting — in plain language. The network team translates. The business never needs to know what a VLAN is. The Network Capability register is the interface. The governance framework is what makes it reliable.</div>
+      </div>
+      <div class="value-card">
+        <div class="value-card-who">For delivery teams</div>
+        <div class="value-card-title">Compliant work moves fast</div>
+        <div class="value-card-body">Solutions that use approved components and match the ZBB boundary contract self-certify. No queue. No PA approval needed. The topology conformance check is the approval. The framework removes friction for compliant work — it only slows down work that carries undocumented risk.</div>
+      </div>
+      <div class="value-card">
+        <div class="value-card-who">For the organisation</div>
+        <div class="value-card-title">Risk visible and owned</div>
+        <div class="value-card-body">Deviations are named, documented, and tracked. The person who accepts the risk is recorded. Contracted capabilities that can't be delivered are surfaced before an incident. Regulatory findings are addressed at design time, not at audit. The estate is governable — not just governed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guiding principles -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num" style="background:var(--slate)">2</div>
+      <div class="section-title">Guiding principles</div>
+    </div>
+    <div class="section-body">
+      <p>These are the architectural and governance positions that underpin every decision in the framework. They are not aspirational — they are the positions PA holds and will defend.</p>
+    </div>
+    <div class="principles-grid">
+      <div class="principle">
+        <div class="principle-mark">01</div>
+        <div class="principle-text"><strong>IP address is a routing attribute.</strong> It is never an authentication or authorisation signal. Using IP as identity is an IAM maturity failure, not a security control.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">02</div>
+        <div class="principle-text"><strong>Approved components ≠ compliant topology.</strong> The risk is in how components are assembled — not just which components are used. The AND rule defines a pattern. The ZBB boundary contract defines what correct assembly looks like.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">03</div>
+        <div class="principle-text"><strong>PA defines and gates; domain experts produce.</strong> Standards require operational grounding. SBBs require platform knowledge. PA sets the criteria and holds the approval gate — SMEs and engineers produce the artefacts.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">04</div>
+        <div class="principle-text"><strong>Compliance is not a separate workstream.</strong> PCI-DSS, DORA, PRA, and GDPR lenses are applied at design time — not retrofitted at audit. Regulatory scope is part of every architecture decision, not a post-delivery check.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">05</div>
+        <div class="principle-text"><strong>Network's remit is packet exchange.</strong> Security policy decisions must not create delivery accountability for the network team. ZBB boundary contracts are co-produced with Cyber — neither domain can act unilaterally.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">06</div>
+        <div class="principle-text"><strong>A retrospective deviation beats an undocumented risk.</strong> The framework is not punitive. A documented deviation with a remediation plan is a better governance outcome than a topology violation nobody knows about.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">07</div>
+        <div class="principle-text"><strong>Independence is what makes governance credible.</strong> PA sits in a separate organisation from the networks delivery chain. This is by design. Architecture governance cannot coexist with delivery accountability in the same role.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-mark">08</div>
+        <div class="principle-text"><strong>Data drives decisions.</strong> The headcount case, the man-marking trigger, and the capability investment case are all evidence-based. Dwell time and deviation volume by domain are the evidence. Assertions are not.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num" style="background:var(--teal)">3</div>
+      <div class="section-title">How the framework works</div>
+    </div>
+    <div class="section-body">
+      <p>The framework connects a business requirement to a governed, documented delivery through a structured but lightweight process. Every step has a named accountable owner and a defined output.</p>
+    </div>
+    <div class="flow-strip">
+      <div class="flow-step">
+        <div class="flow-step-num">01</div>
+        <div class="flow-step-title">Requirement</div>
+        <div class="flow-step-body">Business raises a demand signal or requests against a Network Capability. No VLANs. No ports.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">02</div>
+        <div class="flow-step-title">Pattern gate</div>
+        <div class="flow-step-body">Does an approved pattern cover this? TC-01/02/03 self-assessment. Compliant work self-certifies and moves.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">03</div>
+        <div class="flow-step-title">Forum</div>
+        <div class="flow-step-body">Thread 1 socialises. Thread 2 is PA endorsement for work that needs it — deviations, new capabilities, DA submissions.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">04</div>
+        <div class="flow-step-title">Review</div>
+        <div class="flow-step-body">Solution Design Forum for compliant work. ARG for deviations. Design Authority for strategic decisions.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">05</div>
+        <div class="flow-step-title">Deliver &amp; feedback</div>
+        <div class="flow-step-body">Approved VSBB config templates. Deployment register updated. Operational feedback closes the loop back to standards.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Governance mandate -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num" style="background:var(--rust)">4</div>
+      <div class="section-title">The governance mandate</div>
+    </div>
+    <div class="section-body">
+      <p>Architecture governance only works if it has genuine authority — agreed in advance, not asserted after the fact.</p>
+    </div>
+    <div class="mandate-box">
+      <p><strong>PA operates under independent architecture governance authority.</strong> PA sits in a separate organisation from the networks service delivery chain. This independence is deliberate — it prevents the same function both designing and approving its own work. PA is peer grade to the GCB3 service directors. No shared MD. Disputes that cannot be resolved at peer level escalate to respective MDs.</p>
+      <p><strong>The governance mandate is agreed at GCB3 and MD level across both organisations before the framework is operational.</strong> It is not implied by the existence of this repository. The <code>co-reviewed-by</code> field in <code>governance/conflict-resolution.yaml</code> is the formal record of that agreement. It must be signed before the first forum session runs.</p>
+      <p><strong>GCB3 approval does not substitute for architecture governance.</strong> A GCB3 decision to proceed without PA endorsement escalates to cross-org MD level — it does not resolve the governance question. The framework exists at a different level of authority to service delivery management, not below it.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-links">
+      Process map → <code>governance/process-map.html</code><br>
+      RACI → <code>governance/raci.html</code><br>
+      Roadmap → <code>governance/roadmap.html</code><br>
+      Full guidance → <code>CONTRIBUTING.md</code>
+    </div>
+    <div class="footer-meta">
+      v1.0 · May 2025<br>
+      ref-arch · TOGAF 10<br>
+      PCI-DSS · DORA · PRA SS2/21
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
