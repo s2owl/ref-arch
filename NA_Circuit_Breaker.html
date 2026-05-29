@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Architecture — Priority Circuit Breaker</title>
+
+<style>
+  :root {
+    --ink:     #0f1923;
+    --paper:   #f5f1ea;
+    --rule:    #d4cfc6;
+    --navy:    #1a3355;
+    --mid:     #2a5298;
+    --accent:  #c8410a;
+    --amber:   #b87900;
+    --green:   #1a6b3c;
+    --ghost:   rgba(26,51,85,0.06);
+    --mono:    Calibri, Arial, sans-serif;
+    --serif:   Calibri, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 40px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 18px;
+    margin-bottom: 40px;
+  }
+  .hdr-left {}
+  .hdr-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.15;
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+  .hdr-right {
+    text-align: right;
+    font-size: 11px;
+    color: #888;
+    padding-top: 4px;
+  }
+  .hdr-right strong { color: var(--ink); display: block; font-size: 12px; }
+
+  /* ── Principle bar ── */
+  .principle {
+    background: var(--navy);
+    color: #c8d8f0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 15px;
+    padding: 14px 24px;
+    margin-bottom: 44px;
+    border-left: 4px solid var(--accent);
+  }
+  .principle strong { color: #fff; font-style: normal; font-weight: 600; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+
+  /* ── Flow canvas ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+
+  /* ── Nodes ── */
+  .node {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    padding: 18px 24px;
+    border: 1.5px solid var(--rule);
+    background: #fff;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: rise 0.4s ease forwards;
+  }
+  .node:nth-child(1)  { animation-delay: 0.05s; }
+  .node:nth-child(2)  { animation-delay: 0.15s; }
+  .node:nth-child(4)  { animation-delay: 0.25s; }
+  .node:nth-child(6)  { animation-delay: 0.35s; }
+  .node:nth-child(8)  { animation-delay: 0.45s; }
+  .node:nth-child(10) { animation-delay: 0.55s; }
+  .node:nth-child(12) { animation-delay: 0.65s; }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .node-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: #aaa;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .node-title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .node-body {
+    font-size: 12px;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  /* Node variants */
+  .node-start {
+    background: var(--navy);
+    border-color: var(--navy);
+    max-width: 380px;
+    text-align: center;
+  }
+  .node-start .node-title { color: #fff; font-size: 14px; margin: 0; }
+
+  .node-assess { border-left: 4px solid var(--amber); }
+  .node-assess .node-title { color: var(--amber); }
+
+  .node-p1ok { border-left: 4px solid var(--green); }
+  .node-p1ok .node-title { color: var(--green); }
+
+  .node-decline { border-left: 4px solid var(--accent); background: #fdf5f2; }
+  .node-decline .node-title { color: var(--accent); }
+
+  .node-escalate { border-left: 4px solid var(--amber); background: #fdf8ee; }
+  .node-escalate .node-title { color: var(--amber); }
+
+  .node-override { border-left: 4px solid var(--accent); background: #fdf5f2; }
+  .node-override .node-title { color: var(--accent); }
+
+  .node-close-clean { border-left: 4px solid var(--green); background: #f2faf5; }
+  .node-close-clean .node-title { color: var(--green); }
+
+  .node-log { border: 1.5px dashed var(--rule); background: var(--ghost); max-width: 560px; }
+  .node-log .node-title { color: var(--mid); }
+
+  /* ── Connector lines ── */
+  .connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 560px;
+  }
+  .arrow-line {
+    width: 1.5px;
+    height: 28px;
+    background: var(--rule);
+  }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--rule);
+  }
+  .arrow-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    margin: 2px 0;
+  }
+  .lbl-yes  { color: var(--green);  border: 1px solid var(--green);  background: #f2faf5; }
+  .lbl-no   { color: var(--accent); border: 1px solid var(--accent); background: #fdf5f2; }
+  .lbl-esc  { color: var(--amber);  border: 1px solid var(--amber);  background: #fdf8ee; }
+  .lbl-then { color: var(--mid);    border: 1px solid var(--rule);   background: #fff; }
+
+  /* ── Branch block ── */
+  .branch {
+    display: grid;
+    grid-template-columns: 1fr 24px 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: 700px;
+    margin: 0;
+    opacity: 0;
+    animation: rise 0.4s ease 0.3s forwards;
+  }
+  .branch-col { display: flex; flex-direction: column; align-items: center; }
+  .branch-divider {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 40px;
+    color: var(--rule);
+    font-size: 20px;
+  }
+  .branch-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 12px;
+    margin-bottom: 6px;
+  }
+
+  /* ── Displaced work callout ── */
+  .displaced {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1.5px solid var(--accent);
+    padding: 16px 20px;
+    margin-top: 0;
+    opacity: 0;
+    animation: rise 0.4s ease 0.7s forwards;
+  }
+  .displaced-hdr {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .displaced-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+  }
+  .displaced-item {
+    font-size: 12px;
+    color: #444;
+    padding-left: 12px;
+    border-left: 2px solid var(--rule);
+    line-height: 1.5;
+  }
+  .displaced-item strong { display: block; color: var(--ink); font-size: 11px; }
+
+  /* ── Log entry preview ── */
+  .log-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px 16px;
+    margin-top: 10px;
+  }
+  .lf {
+    background: #fff;
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .lf-label { color: #999; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .lf-val { color: var(--ink); }
+  .lf-val.placeholder { color: #bbb; font-style: italic; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #aaa;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { padding: 20px; background: white; }
+    .node, .branch, .displaced { opacity: 1 !important; transform: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <div class="hdr-eyebrow">Network Architecture · Governance Protocol</div>
+    <h1>Priority Circuit<br><em>Breaker</em></h1>
+  </div>
+  <div class="hdr-right">
+    <strong>v1.0 — Internal Use</strong>
+    Network Architecture Function<br>
+    Principal Architect<br>
+    For socialisation &amp; feedback
+  </div>
+</header>
+
+<div class="principle">
+  <strong>Governing principle</strong>
+  A professional decline is not a refusal to work — it is a statement of capacity reality. If the hierarchy chooses to override, the risk of what is displaced transfers with that decision.
+</div>
+
+<div class="flow">
+
+  <!-- START -->
+  <div class="node node-start">
+    <div class="node-title">Request arrives</div>
+  </div>
+
+  <div class="connector">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- STEP 1: ASSESS -->
+  <div class="node node-assess">
+    <div class="node-num">Step 1 · Assess</div>
+    <div class="node-title">Classify against priority tier</div>
+    <div class="node-body">Map the request against the published RACI. Is it P1 (core remit), P2 (7-day SLA), or P3 (unfunded)?<br>Consider: does it displace something already in flight?</div>
+  </div>
+
+  <div class="connector">
+    <div class="arrow-line"></div>
+    <div class="arrow-label lbl-yes">P1 — within remit</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- P1 OK -->
+  <div class="node node-p1ok">
+    <div class="node-num">Step 2a · Proceed</div>
+    <div class="node-title">Accept and schedule</div>
+    <div class="node-body">P1 work is absorbed into normal delivery. Log it in the register as standard. No escalation required.</div>
+  </div>
+
+  <div class="connector" style="margin-top:16px;">
+    <div class="arrow-line"></div>
+    <div class="arrow-label lbl-no">P2 or P3 — outside capacity</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- STEP 2: DECLINE -->
+  <div class="node node-decline">
+    <div class="node-num">Step 2b · Decline</div>
+    <div class="node-title">Issue a documented decline</div>
+    <div class="node-body">
+      Decline the request in writing (email is sufficient). State:<br><br>
+      <strong style="color:#c8410a">1.</strong> The priority tier and why it falls outside current capacity.<br>
+      <strong style="color:#c8410a">2.</strong> What is currently in flight that would be displaced.<br>
+      <strong style="color:#c8410a">3.</strong> That the request remains open if the requestor wishes to escalate.<br><br>
+      Tone: professional and factual. No apology required. Log the decline in the register.
+    </div>
+  </div>
+
+  <div class="connector">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- BRANCH: escalate or not -->
+  <div class="branch">
+    <div class="branch-col">
+      <div class="arrow-label branch-label lbl-no">No escalation</div>
+      <div class="node node-close-clean" style="width:100%;max-width:none;animation-delay:0.3s">
+        <div class="node-num">Step 3a · Close</div>
+        <div class="node-title">Decline stands</div>
+        <div class="node-body">The matter closes. The requestor accepts the position. Log as closed — declined, not escalated. This is evidence of professional capacity management.</div>
+      </div>
+    </div>
+    <div class="branch-divider">|</div>
+    <div class="branch-col">
+      <div class="arrow-label branch-label lbl-esc">Escalation raised</div>
+      <div class="node node-escalate" style="width:100%;max-width:none;animation-delay:0.3s">
+        <div class="node-num">Step 3b · Escalate</div>
+        <div class="node-title">Manager conversation</div>
+        <div class="node-body">Your manager will engage. Present the RACI, the current in-flight work, and the specific displacement. You are defending a documented position — not resisting work.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="connector" style="margin-top:8px;">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- STEP 4: OVERRIDE DECISION -->
+  <div class="node node-override">
+    <div class="node-num">Step 4 · Override</div>
+    <div class="node-title">Manager instructs you to proceed</div>
+    <div class="node-body">
+      Acknowledge the instruction. Confirm in writing (reply to the email chain or follow-up note) the specific work that will be displaced as a result. You are not seeking permission — you are creating a record.<br><br>
+      <em style="color:#999">Example: "Understood. To confirm, proceeding with [X] means [Y] will slip beyond its current commitment. Please let me know if that changes the instruction."</em>
+    </div>
+  </div>
+
+  <div class="connector">
+    <div class="arrow-line"></div>
+    <div class="arrow-label lbl-then">Manager confirms · Risk transfers</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- FINAL: LOG -->
+  <div class="node node-log">
+    <div class="node-num">Step 5 · Log &amp; Proceed</div>
+    <div class="node-title">Register the override and displaced work</div>
+    <div class="node-body">Log the override, the instruction source, and the displaced deliverable in the reprioritisation register. Proceed with the overridden work. The risk of the displaced item is now owned by the person who gave the instruction.</div>
+    <div class="log-fields">
+      <div class="lf"><div class="lf-label">Request</div><div class="lf-val placeholder">e.g. FQDN audit for Project X</div></div>
+      <div class="lf"><div class="lf-label">Original Tier</div><div class="lf-val placeholder">P3</div></div>
+      <div class="lf"><div class="lf-label">Overridden by</div><div class="lf-val placeholder">Line Manager</div></div>
+      <div class="lf"><div class="lf-label">Displaced Work</div><div class="lf-val placeholder">e.g. Deviation Register review</div></div>
+      <div class="lf"><div class="lf-label">Date</div><div class="lf-val placeholder">—</div></div>
+      <div class="lf"><div class="lf-label">Outcome</div><div class="lf-val placeholder">In progress / Slipped / Recovered</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Displacement callout -->
+<div style="display:flex;flex-direction:column;align-items:center;margin-top:40px;">
+<div class="displaced">
+  <div class="displaced-hdr">What displacement looks like in practice — examples</div>
+  <div class="displaced-grid">
+    <div class="displaced-item">
+      <strong>P3 forced to P1</strong>
+      FQDN audit demanded urgently. Deviation Register review (P1) slips. New deviations go unassessed — regulatory exposure accumulates.
+    </div>
+    <div class="displaced-item">
+      <strong>P2 volume overwhelms P1</strong>
+      Five concurrent POC reviews (P2) consume the week. ARB submission (P1) misses governance gate. Programme is delayed one full sprint cycle.
+    </div>
+    <div class="displaced-item">
+      <strong>Project demand absorbs strategy time</strong>
+      Embedded project resource (P3) consumes three days. Federated governance framework update (P1) stalls. Downstream teams work to stale patterns.
+    </div>
+    <div class="displaced-item">
+      <strong>Informal ask becomes formal blocker</strong>
+      Informal "can you just look at this" (P3) expands. Capability matrix review (P1) is deferred. Headcount planning cycle proceeds on inaccurate data.
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <span>Network Architecture · Priority Circuit Breaker · v1.0</span>
+  <span>Companion document: Reprioritisation Register →</span>
+  <span>Internal use only</span>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Architecture — Reprioritisation Register</title>
+
+<style>
+  :root {
+    --ink:     #0f1923;
+    --paper:   #f5f1ea;
+    --rule:    #d4cfc6;
+    --navy:    #1a3355;
+    --mid:     #2a5298;
+    --accent:  #c8410a;
+    --amber:   #b87900;
+    --green:   #1a6b3c;
+    --red-bg:  #fdf5f2;
+    --amb-bg:  #fdf8ee;
+    --grn-bg:  #f2faf5;
+    --ghost:   rgba(26,51,85,0.06);
+    --mono:    Calibri, Arial, sans-serif;
+    --serif:   Calibri, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    padding: 48px 40px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 18px;
+    margin-bottom: 32px;
+  }
+  .hdr-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.15;
+  }
+  h1 em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .hdr-right { text-align: right; font-size: 11px; color: #888; padding-top: 4px; }
+  .hdr-right strong { color: var(--ink); display: block; font-size: 12px; }
+
+  /* ── Controls bar ── */
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .controls-left { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    border: 1.5px solid;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .btn-primary { border-color: var(--navy); color: var(--navy); background: #fff; }
+  .btn-primary:hover { background: var(--navy); color: #fff; }
+  .btn-danger { border-color: var(--accent); color: var(--accent); }
+  .btn-danger:hover { background: var(--accent); color: #fff; }
+  .btn-small { padding: 5px 10px; font-size: 10px; }
+
+  .filter-group { display: flex; gap: 6px; align-items: center; }
+  .filter-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-right: 4px; }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-transform: uppercase;
+  }
+  .pill.active-all    { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .pill.active-open   { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .pill.active-over   { border-color: var(--amber); background: var(--amber); color: #fff; }
+  .pill.active-closed { border-color: var(--green); background: var(--green); color: #fff; }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1.5px solid var(--rule);
+    margin-bottom: 28px;
+  }
+  .stat {
+    background: #fff;
+    padding: 14px 18px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; }
+  .stat-val.col-total  { color: var(--navy); }
+  .stat-val.col-open   { color: var(--accent); }
+  .stat-val.col-over   { color: var(--amber); }
+  .stat-val.col-closed { color: var(--green); }
+
+  /* ── Register table ── */
+  .register-wrap {
+    overflow-x: auto;
+    border: 1.5px solid var(--rule);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    min-width: 900px;
+  }
+  thead tr { background: var(--navy); }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c8d8f0;
+    font-weight: 500;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: var(--ghost); }
+  tbody td {
+    padding: 12px 14px;
+    font-size: 12px;
+    vertical-align: top;
+    border-right: 1px solid var(--rule);
+  }
+  tbody td:last-child { border-right: none; }
+
+  /* ── Tier badges ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .badge-p1 { background: #e8eef8; color: var(--navy); border: 1px solid #b0c4e8; }
+  .badge-p2 { background: #fdf8ee; color: var(--amber); border: 1px solid #e8c870; }
+  .badge-p3 { background: var(--red-bg); color: var(--accent); border: 1px solid #e8a88a; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    font-weight: 500;
+  }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .status-open   { color: var(--accent); background: var(--red-bg); border: 1px solid #e8a88a; }
+  .status-open::before { background: var(--accent); }
+  .status-over   { color: var(--amber); background: var(--amb-bg); border: 1px solid #e8c870; }
+  .status-over::before { background: var(--amber); }
+  .status-closed { color: var(--green); background: var(--grn-bg); border: 1px solid #7ecfa4; }
+  .status-closed::before { background: var(--green); }
+
+  .override-flag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .override-yes { background: #fff0eb; color: var(--accent); border: 1px solid #e8a88a; }
+  .override-no  { background: #f5f5f5; color: #aaa; border: 1px solid var(--rule); }
+
+  .td-activity { max-width: 220px; }
+  .td-displaced { max-width: 200px; font-size: 11px; color: #555; }
+  .td-notes { max-width: 180px; font-size: 11px; color: #777; font-style: italic; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #bbb;
+  }
+  .empty-state .es-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-state p { font-family: var(--serif); font-style: italic; font-size: 16px; color: #ccc; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,25,35,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--paper);
+    border: 2px solid var(--navy);
+    padding: 32px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 11px; color: #999; margin-bottom: 24px; letter-spacing: 0.06em; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+  }
+  input, select, textarea {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    padding: 9px 12px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--mid); }
+  textarea { resize: vertical; min-height: 72px; }
+  select { cursor: pointer; }
+
+  .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+
+  /* ── Export ── */
+  .export-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 48px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #aaa;
+    letter-spacing: 0.08em;
+  }
+
+  @media print {
+    .controls, .export-bar, .btn, .modal-overlay { display: none !important; }
+    body { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-eyebrow">Network Architecture · Governance Protocol</div>
+    <h1>Reprioritisation<br><em>Register</em></h1>
+  </div>
+  <div class="hdr-right">
+    <strong>v1.0 — Internal Use</strong>
+    Network Architecture Function<br>
+    Principal Architect<br>
+    Companion: Priority Circuit Breaker
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats" id="stats">
+  <div class="stat"><div class="stat-val col-total" id="s-total">0</div><div class="stat-label">Total entries</div></div>
+  <div class="stat"><div class="stat-val col-open" id="s-open">0</div><div class="stat-label">Declined / open</div></div>
+  <div class="stat"><div class="stat-val col-over" id="s-over">0</div><div class="stat-label">Overridden</div></div>
+  <div class="stat"><div class="stat-val col-closed" id="s-closed">0</div><div class="stat-label">Closed</div></div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="controls-left">
+    <div class="filter-group">
+      <span class="filter-label">Filter:</span>
+      <button class="pill active-all" onclick="setFilter('all', this)">All</button>
+      <button class="pill" onclick="setFilter('open', this)">Declined</button>
+      <button class="pill" onclick="setFilter('overridden', this)">Overridden</button>
+      <button class="pill" onclick="setFilter('closed', this)">Closed</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary" onclick="openModal()">+ Log entry</button>
+    <button class="btn btn-primary btn-small" onclick="exportCSV()">Export CSV</button>
+    <button class="btn btn-danger btn-small" onclick="clearAll()">Clear all</button>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="register-wrap">
+  <table id="register-table">
+    <thead>
+      <tr>
+        <th style="width:46px">#</th>
+        <th style="width:82px">Date</th>
+        <th>Activity Requested</th>
+        <th style="width:70px">Tier</th>
+        <th>Requestor</th>
+        <th>Displaced Work</th>
+        <th style="width:90px">Override?</th>
+        <th style="width:80px">Status</th>
+        <th>Notes / Outcome</th>
+        <th style="width:60px"></th>
+      </tr>
+    </thead>
+    <tbody id="register-body">
+      <!-- rows injected by JS -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="maybeClose(event)">
+  <div class="modal">
+    <div class="modal-title">Log entry</div>
+    <div class="modal-sub">Record a decline, override, or closed item</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="form-group">
+        <label>Priority tier (original)</label>
+        <select id="f-tier">
+          <option value="">— select —</option>
+          <option value="P1">P1 — Core remit</option>
+          <option value="P2">P2 — 7-day SLA</option>
+          <option value="P3">P3 — Unfunded</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Activity requested</label>
+        <input type="text" id="f-activity" placeholder="e.g. FQDN audit for Project Phoenix">
+      </div>
+      <div class="form-group">
+        <label>Requested by</label>
+        <input type="text" id="f-requestor" placeholder="e.g. Project PMO / Name">
+      </div>
+      <div class="form-group">
+        <label>Override instructed by</label>
+        <input type="text" id="f-override-by" placeholder="Leave blank if no override">
+      </div>
+      <div class="form-group full">
+        <label>Displaced work (what slips as a result)</label>
+        <input type="text" id="f-displaced" placeholder="e.g. Deviation Register review — P1">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="open">Declined — open</option>
+          <option value="overridden">Overridden — in progress</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Notes / Outcome</label>
+        <textarea id="f-notes" placeholder="What happened? Any displacement consequence?"></textarea>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary btn-small" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Network Architecture · Reprioritisation Register · v1.0</span>
+  <span id="footer-count">0 entries</span>
+  <span>Internal use only</span>
+</footer>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let entries = [];
+  let filter  = 'all';
+  let editId  = null;
+
+  const STORAGE_KEY = 'na_register_v1';
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) entries = JSON.parse(raw);
+    } catch(e) {}
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch(e) {}
+  }
+
+  // ── Seed data ──────────────────────────────────────────────────────────────
+  const seed = [
+    {
+      id: 1, date: '2025-05-12', tier: 'P3', activity: 'FQDN audit — Project Atlas',
+      requestor: 'Project Atlas PMO', overrideBy: 'Chief Architect',
+      displaced: 'Deviation Register cycle — P1', status: 'overridden',
+      notes: 'Instructed to proceed. Deviation Register review deferred by 10 days. Risk noted.'
+    },
+    {
+      id: 2, date: '2025-05-19', tier: 'P2', activity: 'POC review — SD-WAN vendor X',
+      requestor: 'Network Director', overrideBy: '',
+      displaced: 'None — within P2 capacity', status: 'closed',
+      notes: 'Completed within 7-day SLA. No displacement.'
+    },
+    {
+      id: 3, date: '2025-05-26', tier: 'P3', activity: 'Project Orion — embedded architecture resource',
+      requestor: 'Orion Programme Manager', overrideBy: '',
+      displaced: 'Capability Matrix update — P1', status: 'open',
+      notes: 'Declined. Requestor informed project must fund headcount. Awaiting escalation decision.'
+    },
+  ];
+
+  function init() {
+    load();
+    if (entries.length === 0) entries = [...seed];
+    setTodayDefault();
+    render();
+  }
+
+  function setTodayDefault() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('f-date').value = today;
+  }
+
+  // ── Filter ─────────────────────────────────────────────────────────────────
+  function setFilter(f, el) {
+    filter = f;
+    document.querySelectorAll('.pill').forEach(p => {
+      p.className = 'pill';
+      if (p === el) p.classList.add(`active-${f === 'all' ? 'all' : f === 'open' ? 'open' : f === 'overridden' ? 'over' : 'closed'}`);
+    });
+    render();
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function render() {
+    const visible = filter === 'all' ? entries : entries.filter(e => {
+      if (filter === 'open')      return e.status === 'open';
+      if (filter === 'overridden') return e.status === 'overridden';
+      if (filter === 'closed')    return e.status === 'closed';
+    });
+
+    const tbody = document.getElementById('register-body');
+
+    if (visible.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="es-icon">◻</div><p>No entries to display</p></div></td></tr>`;
+    } else {
+      tbody.innerHTML = visible.map((e, i) => `
+        <tr data-id="${e.id}">
+          <td style="color:#bbb;font-size:11px">${String(i+1).padStart(2,'0')}</td>
+          <td style="white-space:nowrap;font-size:11px">${fmtDate(e.date)}</td>
+          <td class="td-activity">${esc(e.activity)}</td>
+          <td><span class="badge badge-${e.tier.toLowerCase()}">${e.tier}</span></td>
+          <td style="font-size:12px">${esc(e.requestor)}</td>
+          <td class="td-displaced">${esc(e.displaced) || '<span style="color:#ccc">—</span>'}</td>
+          <td>${e.overrideBy
+            ? `<span class="override-flag override-yes">Yes</span><br><span style="font-size:10px;color:#888;margin-top:3px;display:block">${esc(e.overrideBy)}</span>`
+            : `<span class="override-flag override-no">No</span>`}</td>
+          <td><span class="status-badge status-${e.status}">${statusLabel(e.status)}</span></td>
+          <td class="td-notes">${esc(e.notes) || ''}</td>
+          <td>
+            <button class="btn btn-primary btn-small" onclick="editEntry(${e.id})" style="margin-bottom:4px;display:block;width:100%">Edit</button>
+            <button class="btn btn-danger btn-small" onclick="deleteEntry(${e.id})" style="display:block;width:100%">Del</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Stats
+    document.getElementById('s-total').textContent  = entries.length;
+    document.getElementById('s-open').textContent   = entries.filter(e => e.status === 'open').length;
+    document.getElementById('s-over').textContent   = entries.filter(e => e.status === 'overridden').length;
+    document.getElementById('s-closed').textContent = entries.filter(e => e.status === 'closed').length;
+    document.getElementById('footer-count').textContent = `${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}`;
+  }
+
+  function statusLabel(s) {
+    return s === 'open' ? 'Declined' : s === 'overridden' ? 'Overridden' : 'Closed';
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    const [y,m,day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+  }
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Modal ──────────────────────────────────────────────────────────────────
+  function openModal(prefill) {
+    editId = null;
+    clearForm();
+    setTodayDefault();
+    if (prefill) populateForm(prefill);
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    editId = null;
+  }
+  function maybeClose(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+  function clearForm() {
+    ['f-date','f-tier','f-activity','f-requestor','f-override-by','f-displaced','f-notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-status').value = 'open';
+  }
+  function populateForm(e) {
+    document.getElementById('f-date').value        = e.date || '';
+    document.getElementById('f-tier').value        = e.tier || '';
+    document.getElementById('f-activity').value    = e.activity || '';
+    document.getElementById('f-requestor').value   = e.requestor || '';
+    document.getElementById('f-override-by').value = e.overrideBy || '';
+    document.getElementById('f-displaced').value   = e.displaced || '';
+    document.getElementById('f-status').value      = e.status || 'open';
+    document.getElementById('f-notes').value       = e.notes || '';
+  }
+
+  function saveEntry() {
+    const activity = document.getElementById('f-activity').value.trim();
+    if (!activity) { alert('Activity is required.'); return; }
+
+    const entry = {
+      id:         editId || Date.now(),
+      date:       document.getElementById('f-date').value,
+      tier:       document.getElementById('f-tier').value,
+      activity,
+      requestor:  document.getElementById('f-requestor').value.trim(),
+      overrideBy: document.getElementById('f-override-by').value.trim(),
+      displaced:  document.getElementById('f-displaced').value.trim(),
+      status:     document.getElementById('f-status').value,
+      notes:      document.getElementById('f-notes').value.trim(),
+    };
+
+    if (editId) {
+      const idx = entries.findIndex(e => e.id === editId);
+      if (idx > -1) entries[idx] = entry;
+    } else {
+      entries.unshift(entry);
+    }
+
+    save();
+    closeModal();
+    render();
+  }
+
+  function editEntry(id) {
+    const e = entries.find(e => e.id === id);
+    if (!e) return;
+    editId = id;
+    populateForm(e);
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    entries = entries.filter(e => e.id !== id);
+    save();
+    render();
+  }
+
+  function clearAll() {
+    if (!confirm('Clear all entries? This cannot be undone.')) return;
+    entries = [];
+    save();
+    render();
+  }
+
+  // ── Export CSV ─────────────────────────────────────────────────────────────
+  function exportCSV() {
+    const headers = ['Date','Tier','Activity','Requestor','Override By','Displaced Work','Status','Notes'];
+    const rows = entries.map(e => [
+      e.date, e.tier, e.activity, e.requestor, e.overrideBy, e.displaced, statusLabel(e.status), e.notes
+    ].map(v => `"${String(v||'').replace(/"/g,'""')}"`));
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NA_Reprioritisation_Register_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Keyboard ───────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  init();
+</script>
+
+</body>
+</html>
