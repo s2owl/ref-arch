@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Architecture — RACI & Capacity Statement</title>
+
+<style>
+  :root {
+    --ink:      #0f1923;
+    --paper:    #f5f1ea;
+    --rule:     #d4cfc6;
+    --navy:     #1a3355;
+    --mid:      #2a5298;
+    --accent:   #c8410a;
+    --amber:    #b87900;
+    --green:    #1a6b3c;
+    --p1-hdr:   #1a3355;
+    --p1-band:  #e8eef8;
+    --p2-hdr:   #2a5298;
+    --p2-band:  #eef3fb;
+    --p3-hdr:   #7b0000;
+    --p3-band:  #fdf0ee;
+    --p3-cell:  #f5c8c0;
+    --ghost:    rgba(26,51,85,0.05);
+    --mono:     Calibri, Arial, sans-serif;
+    --serif:    Calibri, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 40px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 18px;
+    margin-bottom: 32px;
+  }
+  .hdr-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--navy);
+    line-height: 1.15;
+  }
+  h1 em { font-style: italic; font-weight: 300; color: var(--accent); }
+  .hdr-right { text-align: right; font-size: 11px; color: #888; padding-top: 4px; }
+  .hdr-right strong { color: var(--ink); display: block; font-size: 12px; }
+
+  /* ── Nav strip ── */
+  .nav-strip {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .nav-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #aaa; margin-right: 4px; }
+  .nav-link {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    color: var(--mid);
+    text-decoration: none;
+    transition: all 0.12s;
+  }
+  .nav-link:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .nav-link.current { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* ── Purpose block ── */
+  .purpose {
+    background: var(--navy);
+    color: #c8d8f0;
+    padding: 16px 24px;
+    margin-bottom: 36px;
+    border-left: 4px solid var(--accent);
+  }
+  .purpose strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 5px;
+  }
+  .purpose p { font-family: var(--serif); font-size: 14px; line-height: 1.6; }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .filter-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .filter-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-right: 4px; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-transform: uppercase;
+  }
+  .pill.active-all  { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .pill.active-p1   { border-color: var(--p1-hdr); background: var(--p1-hdr); color: #fff; }
+  .pill.active-p2   { border-color: var(--p2-hdr); background: var(--p2-hdr); color: #fff; }
+  .pill.active-p3   { border-color: var(--p3-hdr); background: var(--p3-hdr); color: #fff; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    cursor: pointer;
+    border: 1.5px solid var(--navy);
+    background: #fff;
+    color: var(--navy);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--navy); color: #fff; }
+  .btn-small { padding: 5px 12px; font-size: 10px; }
+
+  /* ── Stats strip ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1.5px solid var(--rule);
+    margin-bottom: 28px;
+  }
+  .stat { background: #fff; padding: 14px 18px; text-align: center; }
+  .stat-val { font-family: var(--serif); font-size: 28px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; }
+  .sv-total { color: var(--navy); }
+  .sv-p1    { color: var(--p1-hdr); }
+  .sv-p2    { color: var(--p2-hdr); }
+  .sv-p3    { color: var(--p3-hdr); }
+
+  /* ── Table wrapper ── */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1.5px solid var(--rule);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 860px;
+  }
+
+  /* ── Column header ── */
+  thead tr { background: #354f6e; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c8d8f0;
+    font-weight: 500;
+    padding: 12px 12px;
+    text-align: left;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    vertical-align: bottom;
+  }
+  thead th.role-col { text-align: center; font-size: 9px; }
+
+  /* ── Tier header rows ── */
+  tr.tier-hdr td {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+  tr.tier-hdr .tier-title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+  tr.tier-hdr .tier-sub {
+    font-size: 11px;
+    font-style: italic;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+  tr.tier-p1 td { background: var(--p1-hdr); }
+  tr.tier-p2 td { background: var(--p2-hdr); }
+  tr.tier-p3 td { background: var(--p3-hdr); }
+
+  /* ── Data rows ── */
+  tr.data-row { transition: filter 0.1s; }
+  tr.data-row:hover { filter: brightness(0.97); }
+  tr.data-row td {
+    padding: 11px 12px;
+    font-size: 12px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+  tr.data-row td:last-child { border-right: none; }
+
+  tr.row-p1 td { background: var(--p1-band); }
+  tr.row-p2 td { background: var(--p2-band); }
+  tr.row-p3 td { background: var(--p3-band); }
+
+  /* ── Tier badge ── */
+  .tier-badge {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .tb-p1 { background: var(--p1-band); color: var(--p1-hdr); border: 1px solid #a0b8dc; }
+  .tb-p2 { background: #e8f0fb; color: var(--p2-hdr); border: 1px solid #8aaedc; }
+  .tb-p3 { background: #fae0dc; color: var(--p3-hdr); border: 1px solid #d08880; }
+
+  /* ── RACI cells ── */
+  .raci-cell { text-align: center; font-weight: 500; font-size: 12px; white-space: nowrap; }
+  .rc-ra  { color: var(--navy); }
+  .rc-r   { color: var(--green); }
+  .rc-a   { color: var(--amber); }
+  .rc-c   { color: #5a5a00; }
+  .rc-i   { color: #555; }
+  .rc-nil { color: #ccc; }
+  .rc-gap { color: var(--accent); background: var(--p3-cell); font-size: 11px; }
+
+  /* ── Activity cell ── */
+  .activity-text { font-size: 12px; color: var(--ink); line-height: 1.55; }
+  .notes-text { font-size: 11px; color: #666; font-style: italic; line-height: 1.5; }
+
+  /* ── Legend ── */
+  .legend-section { margin-top: 40px; }
+  .section-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1.5px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .legend-item {
+    background: #fff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .legend-code {
+    font-weight: 500;
+    font-size: 14px;
+    min-width: 36px;
+    text-align: center;
+    padding: 2px 0;
+  }
+  .legend-detail {}
+  .legend-name { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .legend-desc { font-size: 11px; color: #777; }
+
+  /* ── Capacity note ── */
+  .capacity-note {
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    border-left: 4px solid var(--navy);
+    padding: 20px 24px;
+    margin-top: 8px;
+  }
+  .capacity-note p { font-size: 13px; color: #444; line-height: 1.7; margin-bottom: 10px; }
+  .capacity-note p:last-child { margin-bottom: 0; }
+  .capacity-note strong { color: var(--ink); }
+  .capacity-note em { color: #888; }
+
+  /* ── Search ── */
+  .search-wrap { position: relative; }
+  .search-wrap input {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    padding: 7px 12px 7px 32px;
+    color: var(--ink);
+    outline: none;
+    width: 220px;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--mid); }
+  .search-wrap::before {
+    content: '⌕';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bbb;
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #aaa;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Hidden rows ── */
+  tr.hidden { display: none; }
+
+  /* ── Fade in ── */
+  .fade-in { opacity: 0; animation: fadeIn 0.4s ease 0.1s forwards; }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  @media print {
+    .controls, .nav-strip .btn, footer { display: none; }
+    body { padding: 16px; background: white; }
+    .table-wrap { overflow: visible; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-eyebrow">Network Architecture · Governance Framework</div>
+    <h1>RACI &amp; Capacity<br><em>Statement</em></h1>
+  </div>
+  <div class="hdr-right">
+    <strong>v1.0 — Internal Use</strong>
+    Principal Architect<br>
+    Single contributor<br>
+    For socialisation &amp; feedback
+  </div>
+</header>
+
+<!-- Nav -->
+<div class="nav-strip">
+  <span class="nav-label">Suite:</span>
+  <a class="nav-link current" href="#">RACI</a>
+  <a class="nav-link" href="NA_Circuit_Breaker.html">Circuit Breaker</a>
+  <a class="nav-link" href="NA_Reprioritisation_Register.html">Register</a>
+</div>
+
+<!-- Purpose -->
+<div class="purpose fade-in">
+  <strong>Purpose</strong>
+  <p>This document defines what the Network Architecture function will deliver (P1/P2) and what cannot be covered without funded headcount (P3). As a single contributor, the breadth of demand placed on the Network Architecture function exceeds what is feasible to deliver. This document makes that position transparent. Presented for socialisation and feedback.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats fade-in">
+  <div class="stat"><div class="stat-val sv-total">15</div><div class="stat-label">Total responsibilities</div></div>
+  <div class="stat"><div class="stat-val sv-p1">5</div><div class="stat-label">P1 — Core remit</div></div>
+  <div class="stat"><div class="stat-val sv-p2">5</div><div class="stat-label">P2 — 7-day SLA</div></div>
+  <div class="stat"><div class="stat-val sv-p3">5</div><div class="stat-label">P3 — Unfunded gap</div></div>
+</div>
+
+<!-- Controls -->
+<div class="controls fade-in">
+  <div class="filter-group">
+    <span class="filter-label">Filter:</span>
+    <button class="pill active-all" data-filter="all">All</button>
+    <button class="pill" data-filter="p1">P1</button>
+    <button class="pill" data-filter="p2">P2</button>
+    <button class="pill" data-filter="p3">P3 — Unfunded</button>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search activities…">
+    </div>
+    <button class="btn btn-small" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-wrap fade-in">
+<table id="raci-table">
+  <thead>
+    <tr>
+      <th style="width:36px">#</th>
+      <th style="min-width:340px">Activity / Responsibility</th>
+      <th style="width:44px">P</th>
+      <th class="role-col" style="width:96px">Network<br>Architect<br></th>
+      <th class="role-col" style="width:88px">Chief<br>Architect</th>
+      <th class="role-col" style="width:88px">Networks<br>MD</th>
+      <th class="role-col" style="width:96px">Network<br>Directors<br></th>
+      <th class="role-col" style="width:96px">Peer Architects<br>&amp; Teams<br></th>
+      <th class="role-col" style="width:80px">Project<br>Teams</th>
+      <th style="min-width:180px">Notes / Constraints</th>
+    </tr>
+  </thead>
+  <tbody id="raci-body">
+  </tbody>
+</table>
+</div>
+
+<!-- Legend -->
+<div class="legend-section fade-in">
+  <div class="section-title">RACI Key</div>
+  <div class="legend-grid">
+    <div class="legend-item">
+      <div class="legend-code rc-ra">R/A</div>
+      <div class="legend-detail">
+        <div class="legend-name">Responsible &amp; Accountable</div>
+        <div class="legend-desc">Single contributor — no separation of duties possible within current resourcing</div>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-code rc-r">R</div>
+      <div class="legend-detail">
+        <div class="legend-name">Responsible</div>
+        <div class="legend-desc">Does the work</div>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-code rc-a">A</div>
+      <div class="legend-detail">
+        <div class="legend-name">Accountable</div>
+        <div class="legend-desc">Owns the outcome; signs off</div>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-code rc-c">C</div>
+      <div class="legend-detail">
+        <div class="legend-name">Consulted</div>
+        <div class="legend-desc">Input sought before decision</div>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-code rc-i">I</div>
+      <div class="legend-detail">
+        <div class="legend-name">Informed</div>
+        <div class="legend-desc">Notified of outcome</div>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-code rc-gap" style="background:none;font-size:14px;">—</div>
+      <div class="legend-detail">
+        <div class="legend-name" style="color:var(--accent)">Unfunded Gap</div>
+        <div class="legend-desc">Cannot be delivered without additional resource. Not a deprioritisation — a capacity statement.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Capacity note -->
+  <div class="section-title">Capacity Context</div>
+  <div class="capacity-note">
+    <p>As a single-contributor function, the Network Architecture domain cannot feasibly absorb the full range of demand placed upon it. This RACI sets out a deliberate and transparent position: P1 and P2 activities will be delivered; P3 activities will not be delivered without additional resource. This is not a statement of unwillingness — it is a statement of structural capacity.</p>
+    <p>Where project programmes generate demand that falls within P3, those programmes are expected to <strong>fund the Network Architecture resource</strong> required to support them. Absorbing this demand without additional resource introduces delivery risk, architectural inconsistency, and an unsustainable operating model.</p>
+    <p><em>This document is presented for socialisation and feedback. It does not constitute a refusal of organisational obligation — it constitutes a transparent statement of what is structurally feasible, and an invitation to resolve the gap.</em></p>
+  </div>
+</div>
+
+<footer>
+  <span>Network Architecture · RACI &amp; Capacity Statement · v1.0</span>
+  <span>Companion documents: Circuit Breaker · Reprioritisation Register</span>
+  <span>Internal use only</span>
+</footer>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const data = [
+  // ── P1 ──
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    tierHdr: true,
+    title: 'Priority 1 — Core Remit: Delivered (No SLA)',
+    sub:   'Architecture governance, integrity, and regulatory compliance. Delivered as a matter of course; these define the boundary of the Network Architecture function.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Federated Network Architecture Governance Framework — authorship, maintenance, and evolution',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'C', peer: 'C', proj: 'I',
+    notes: 'Core deliverable. Jointly developed; ownership sits with Network Architecture.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Build, Operate & Consume Framework for Network Automation — design and ownership',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'C', peer: 'C', proj: 'I',
+    notes: 'Enables self-service consumption of network patterns.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Scheduled Network Architecture Governance Cadence — published programme for artefact submission, review, and approval',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'I', peer: 'I', proj: 'I',
+    notes: 'Governance on a published schedule, not on demand. Submitting teams align to the cadence; ad-hoc requests are queued to the next slot unless escalated as P1.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Deviation Register — assessment, recording, and governance of risk deviations',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'I', peer: 'C', proj: 'C',
+    notes: 'Deviations formally assessed; risk acceptance owned by the business.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Capability Matrix — definition, maintenance, and currency of the Network Architecture domain',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'I', peer: 'C', proj: '—',
+    notes: 'Essential for portfolio planning and headcount justification.'
+  },
+  {
+    tier: 'p1', rowClass: 'row-p1',
+    activity: 'Architecture Review Board participation — network domain representation',
+    you: 'R/A', ca: 'A', md: 'I', dir: 'I', peer: 'C', proj: 'I',
+    notes: 'Mandatory governance gate; cannot be delegated without funded cover.'
+  },
+
+  // ── P2 ──
+  {
+    tier: 'p2', rowClass: 'row-p2',
+    tierHdr: true,
+    title: 'Priority 2 — Will Be Done: 7-Day SLA (Business Impact)',
+    sub:   'Items with clear business impact addressed within a 7-day SLA. Delays beyond this reflect the limits of a single-contributor function operating across the full scope of the domain.'
+  },
+  {
+    tier: 'p2', rowClass: 'row-p2',
+    activity: 'Review, comment, and approve all network-space artefacts — standards, patterns, strategies, roadmaps, principles, cross-domain demand, and POC/pilot work',
+    you: 'R/A', ca: 'A', md: 'I', dir: 'I', peer: 'C', proj: 'C',
+    notes: '7-day SLA. All submissions managed against the published governance cadence; ad-hoc requests queue to the next slot unless formally escalated. Network Architecture holds approval authority.'
+  },
+  {
+    tier: 'p2', rowClass: 'row-p2',
+    activity: 'Strategic vendor cost reviews — assessment against network strategy and pattern alignment',
+    you: 'R/A', ca: 'C', md: 'C', dir: 'C', peer: '—', proj: 'I',
+    notes: '7-day SLA from referral. Non-strategic procurement decisions outside this scope.'
+  },
+  {
+    tier: 'p2', rowClass: 'row-p2',
+    activity: 'Estate optimisation reviews — periodic assessment of current estate in a build vs buy context',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'C', peer: 'C', proj: '—',
+    notes: '7-day SLA to initiate. Cadence agreed with Networks MD.'
+  },
+  {
+    tier: 'p2', rowClass: 'row-p2',
+    activity: 'Post-incident resiliency reviews — network domain assessment following any service impact',
+    you: 'R/A', ca: 'C', md: 'I', dir: 'C', peer: 'C', proj: 'I',
+    notes: '7-day SLA from incident closure. Applies even where root cause is not network.'
+  },
+
+  // ── P3 ──
+  {
+    tier: 'p3', rowClass: 'row-p3',
+    tierHdr: true,
+    title: 'Priority 3 — Cannot Be Covered: Funded Headcount Required',
+    sub:   'The volume and nature of these activities is not feasible for a single-contributor function to absorb alongside P1 and P2 delivery. Cells marked — indicate an unfunded gap, not a deprioritised choice. Projects generating this demand should fund the resource required.'
+  },
+  {
+    tier: 'p3', rowClass: 'row-p3', vacant: true,
+    activity: 'FQDN lifecycle management — all FQDN requests, allocation, governance, and record maintenance for the business',
+    you: '—', ca: 'I', md: 'I', dir: 'I', peer: '—', proj: 'I',
+    notes: 'Operational function. Requires dedicated resource. Risk: uncontrolled DNS proliferation.'
+  },
+  {
+    tier: 'p3', rowClass: 'row-p3', vacant: true,
+    activity: 'Network Architecture conduit — management of all inbound requirements from ITSM, Resilience, Developer, Server & Hosting, and End User Device teams',
+    you: '—', ca: 'I', md: 'I', dir: 'I', peer: 'I', proj: '—',
+    notes: 'Five domains generating continuous inbound demand. Managing this as a single point of contact is not feasible alongside core P1 and P2 delivery.'
+  },
+  {
+    tier: 'p3', rowClass: 'row-p3', vacant: true,
+    activity: 'Project-embedded Network Architecture resource — engagement as go-to resource across all project requests',
+    you: '—', ca: 'I', md: 'I', dir: 'I', peer: '—', proj: 'R',
+    notes: 'Projects must fund dedicated Network Architecture resource. Ad-hoc inclusion is not a sustainable delivery model.'
+  },
+  {
+    tier: 'p3', rowClass: 'row-p3', vacant: true,
+    activity: 'Network business application management — application group ownership, maintenance, and alignment to senior scorecards',
+    you: '—', ca: 'I', md: 'I', dir: 'C', peer: '—', proj: '—',
+    notes: 'Operational BAU function. Requires named owner with sufficient capacity. Currently unassigned.'
+  },
+  {
+    tier: 'p3', rowClass: 'row-p3', vacant: true,
+    activity: 'Non-strategic procurement decisions — management and governance of out-of-pattern vendor decisions',
+    you: '—', ca: 'I', md: 'C', dir: 'C', peer: '—', proj: 'I',
+    notes: 'Requires a governance owner; currently falls to Network Architecture by default without resource.'
+  },
+];
+
+// ── RACI cell render ──────────────────────────────────────────────────────────
+function raciClass(val, isVacant) {
+  if (val === 'R/A') return 'rc-ra';
+  if (val === 'R')   return 'rc-r';
+  if (val === 'A')   return 'rc-a';
+  if (val === 'C')   return 'rc-c';
+  if (val === 'I')   return 'rc-i';
+  if (val === '—' && isVacant) return 'rc-gap';
+  return 'rc-nil';
+}
+
+function renderRaciCell(val, isVacant) {
+  const cls = raciClass(val, isVacant);
+  return `<td class="raci-cell ${cls}">${val}</td>`;
+}
+
+// ── Tier badge ────────────────────────────────────────────────────────────────
+function tierBadge(t) {
+  return `<span class="tier-badge tb-${t}">${t.toUpperCase()}</span>`;
+}
+
+// ── Build table ───────────────────────────────────────────────────────────────
+function buildTable(filterTier, searchTerm) {
+  const tbody = document.getElementById('raci-body');
+  let html = '';
+  let rowNum = 0;
+
+  for (const row of data) {
+    // Tier header rows
+    if (row.tierHdr) {
+      const hdrClass = `tier-hdr tier-${row.tier}`;
+      const show = (filterTier === 'all' || filterTier === row.tier) ? '' : 'hidden';
+      html += `<tr class="${hdrClass} ${show}" data-tier="${row.tier}">
+        <td colspan="10">
+          <div class="tier-title">${row.title}</div>
+          <div class="tier-sub">${row.sub}</div>
+        </td>
+      </tr>`;
+      continue;
+    }
+
+    rowNum++;
+    const tierMatch = filterTier === 'all' || filterTier === row.tier;
+    const searchMatch = !searchTerm || row.activity.toLowerCase().includes(searchTerm) || (row.notes||'').toLowerCase().includes(searchTerm);
+    const show = (tierMatch && searchMatch) ? '' : 'hidden';
+
+    html += `<tr class="data-row ${row.rowClass} ${show}" data-tier="${row.tier}">
+      <td style="color:#bbb;font-size:11px;white-space:nowrap">${String(rowNum).padStart(2,'0')}</td>
+      <td><div class="activity-text">${esc(row.activity)}</div></td>
+      <td style="text-align:center">${tierBadge(row.tier)}</td>
+      ${renderRaciCell(row.you, row.vacant)}
+      ${renderRaciCell(row.ca,  false)}
+      ${renderRaciCell(row.md,  false)}
+      ${renderRaciCell(row.dir, false)}
+      ${renderRaciCell(row.peer,false)}
+      ${renderRaciCell(row.proj,false)}
+      <td><div class="notes-text">${esc(row.notes||'')}</div></td>
+    </tr>`;
+  }
+
+  tbody.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Filter pills ──────────────────────────────────────────────────────────────
+let currentFilter = 'all';
+let currentSearch = '';
+
+document.querySelectorAll('.pill[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentFilter = btn.dataset.filter;
+    document.querySelectorAll('.pill[data-filter]').forEach(p => {
+      p.className = 'pill';
+    });
+    const sfx = currentFilter === 'all' ? 'all' : currentFilter === 'p1' ? 'p1' : currentFilter === 'p2' ? 'p2' : 'p3';
+    btn.classList.add(`active-${sfx}`);
+    buildTable(currentFilter, currentSearch);
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  currentSearch = e.target.value.trim().toLowerCase();
+  buildTable(currentFilter, currentSearch);
+});
+
+buildTable('all', '');
+</script>
+</body>
+</html>
